@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw data from Homes database
+    database: postgres
+    schema: airbyte_etl_raw
+    tables:
+      - name: Homes__test_
+        description: Raw Homes data

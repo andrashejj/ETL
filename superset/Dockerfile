@@ -21,5 +21,6 @@ RUN superset fab create-admin \
               --password ${SUPERSET_PASSWORD}
 RUN superset db upgrade
 RUN superset init
-RUN superset set_database_uri -d DW  -u duckdb:///superset_home/db/datamart.duckdb
+RUN superset set_database_uri -d DW  -u duckdb:///superset_home/db/datamart.duckdb && \
+    superset set_database_uri -d PG -u postgresql://user:password123@host.docker.internal:5432/postgres
 RUN superset import-dashboards -p ./dashboard.zip -u ${SUPERSET_ADMIN}

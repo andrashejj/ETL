@@ -16,6 +16,7 @@ logs/
 **/schedules
 **/storage
 dbt/postcard_company/*
+dbt/homes/profiles.yml
 
 # Keeps
 !geography.csv

@@ -13,22 +13,22 @@ services:
       dockerfile: ./dbt/Dockerfile
     volumes:
       - ./shared:/shared
-      - ./dbt/postcard_company:/datamart/postcard_company
+      - ./dbt/homes:/datamart/homes
     environment:
-      INPUT_FILES_PATH: /shared/parquet  
+      INPUT_FILES_PATH: /shared/parquet
   dagster:
     build:
       context: .
       dockerfile: ./dagster/Dockerfile
     restart: always
     environment:
-        DUCKDB_FILE_PATH: /shared/db/datamart.duckdb
-        INPUT_FILES_PATH: /shared/parquet
+      DUCKDB_FILE_PATH: /shared/db/datamart.duckdb
+      INPUT_FILES_PATH: /shared/parquet
     volumes:
-        - ./shared:/shared
-        - ./dbt/postcard_company:/postcard_company
+      - ./shared:/shared
+      - ./dbt/homes:/homes
     ports:
-        - "3000:3000"
+      - '3000:3000'
     depends_on:
       generator:
         condition: service_completed_successfully
@@ -47,9 +47,9 @@ services:
     environment:
       SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
     ports:
-        - "8088:8088"
-    command:     gunicorn --bind  "0.0.0.0:8088" --access-logfile '-' --error-logfile '-' --workers 1 --worker-class gthread --threads 20 --timeout 60 --limit-request-line 0 --limit-request-field_size 0 "superset.app:create_app()"
+      - '8088:8088'
+    command: gunicorn --bind  "0.0.0.0:8088" --access-logfile '-' --error-logfile '-' --workers 1 --worker-class gthread --threads 20 --timeout 60 --limit-request-line 0 --limit-request-field_size 0 "superset.app:create_app()"
     volumes:
-        - ./shared/db:/app/superset_home/db
+      - ./shared/db:/app/superset_home/db
     depends_on:
       - dagster

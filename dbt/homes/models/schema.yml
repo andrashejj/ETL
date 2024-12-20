@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: raw_homes
+    description: Raw homes data from the source
+    columns:
+      - name: Sell
+        description: Selling price of the home
+        tests:
+          - not_null
+      - name: __Age_
+        description: Age of the property in years
+      - name: __Beds_
+        description: Number of bedrooms
+      - name: __List_
+        description: List price of the property
+      - name: __Acres_
+        description: Property size in acres
+      - name: __Baths_
+        description: Number of bathrooms
+      - name: __Rooms_
+        description: Total number of rooms
+      - name: __Taxes_
+        description: Annual property taxes
+      - name: __Living_
+        description: Living space in square feet
+      - name: _airbyte_raw_id
+        description: Unique identifier for the record
+        tests:
+          - unique
+          - not_null
+      - name: _airbyte_extracted_at
+        description: Timestamp when the record was extracted
+      - name: _airbyte_generation_id
+        description: Generation ID from Airbyte
+      - name: _airbyte_meta
+        description: Additional metadata from Airbyte
+
+  - name: stg_homes
+    description: Cleaned and standardized homes data
+    schema:
+    columns:
+      - name: selling_price
+        description: Final selling price of the home
+        tests:
+          - not_null
+      - name: list_price
+        description: Original listing price
+      - name: property_age
+        description: Age of the property in years
+      - name: bedrooms
+        description: Number of bedrooms
+      - name: bathrooms
+        description: Number of bathrooms
+      - name: total_rooms
+        description: Total number of rooms
+      - name: property_size_acres
+        description: Property size in acres
+      - name: living_space_sqft
+        description: Living space in square feet
+      - name: annual_taxes
+        description: Annual property taxes
+
+  - name: dim_homes
+    description: Dimension table for homes with property attributes and metrics
+    columns:
+      - name: selling_price
+        description: Final selling price
+      - name: price_per_sqft
+        description: Selling price per square foot
+      - name: price_to_list_ratio
+        description: Ratio of selling price to list price
+      - name: tax_rate
+        description: Annual tax rate (taxes/selling price)

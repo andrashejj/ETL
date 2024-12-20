@@ -1,0 +1,26 @@
+name: 'homes'
+version: '1.0.0'
+config-version: 2
+
+profile: 'homes'
+
+model-paths: ['models']
+seed-paths: ['seeds']
+test-paths: ['tests']
+analysis-paths: ['analyses']
+macro-paths: ['macros']
+
+target-path: 'target'
+clean-targets:
+  - 'target'
+  - 'dbt_packages'
+  - 'logs'
+
+models:
+  homes:
+    staging:
+      +materialized: table
+      +schema: etl_processed
+    core:
+      +materialized: table
+      +schema: etl_processed
