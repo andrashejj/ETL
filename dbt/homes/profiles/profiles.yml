@@ -1,0 +1,12 @@
+homes:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: host.docker.internal
+      user: user
+      password: password123
+      port: 5432
+      dbname: postgres
+      schema: airbyte
+      threads: 4
