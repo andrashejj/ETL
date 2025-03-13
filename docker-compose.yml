@@ -8,6 +8,8 @@ services:
       POSTGRES_USER: "postgres_user"
       POSTGRES_PASSWORD: "postgres_password"
       POSTGRES_DB: "postgres_db"
+    ports:
+      - "5432:5432"
     volumes: # Make docker client accessible so we can terminate containers fro>
       - ./shared/postgresql_data:/var/lib/postgresql/data
     healthcheck:
