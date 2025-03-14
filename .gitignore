@@ -1,0 +1,3 @@
+shared/postgresql_data/
+shared/minio_data/
+.env
