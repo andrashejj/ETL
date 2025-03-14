@@ -29,13 +29,26 @@ info "Creating .env file with required environment variables..."
 cat > .env << EOL
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
+POSTGRES_DB=postgres_db
+POSTGRES_PORT=5432
+
+DAGSTER_POSTGRES_USER=\${POSTGRES_USER}
+DAGSTER_POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
+DAGSTER_POSTGRES_DB=\${POSTGRES_DB}
+DAGSTER_PORT=3000
+DAGSTER_CURRENT_IMAGE=dagster_user_code
+
 SUPERSET_ADMIN=admin
 SUPERSET_PASSWORD=admin
 SUPERSET_SECRET_KEY=ChangeMeToARandomStringChangeMeToARandomStringChangeMeTo
+SUPERSET_PORT=8088
+
 MINIO_ROOT_USER=minio
 MINIO_ROOT_PASSWORD=minio123
 MINIO_ACCESS_KEY=Vjv9f77CpkKRDAKa
 MINIO_SECRET_KEY=bKe3EwTUcv7PMCOaUY3AZfaorV+Hk3QH
+MINIO_PORT=9000
+MINIO_CONSOLE_PORT=9001
 EOL
 
 # Confirm .env file creation
@@ -136,4 +149,3 @@ info "🚀 Username: "`grep MINIO_ROOT_USER .env | awk -F '=' {'print $2'}`
 info "🚀 Password: "`grep MINIO_ROOT_PASSWORD .env | awk -F '=' {'print $2'}`
 info "🚀 Minio Access Key: $MINIO_ACCESS_KEY"
 info "🚀 Minio Secret Key: $MINIO_SECRET_KEY"
-

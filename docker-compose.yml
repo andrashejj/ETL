@@ -1,22 +1,24 @@
-version: "3.7"
-
 services:
   postgresql:
-    image: postgres:15
+    image: ankane/pgvector:latest
     container_name: postgresql
-    environment:
-      POSTGRES_USER: "postgres_user"
-      POSTGRES_PASSWORD: "postgres_password"
-      POSTGRES_DB: "postgres_db"
     ports:
-      - "5432:5432"
-    volumes: # Make docker client accessible so we can terminate containers fro>
+      - '5678:5432'
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+    volumes:
       - ./shared/postgresql_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres_user -d postgres_db"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
       interval: 10s
       timeout: 8s
       retries: 5
+    networks:
+      - internal
 
   dagster_user_code:
     build:
@@ -25,18 +27,24 @@ services:
     container_name: dagster_user_code
     image: dagster_user_code_image
     restart: always
+    expose:
+      - "4000"
     environment:
-      DAGSTER_POSTGRES_USER: "postgres_user"
-      DAGSTER_POSTGRES_PASSWORD: "postgres_password"
-      DAGSTER_POSTGRES_DB: "postgres_db"
-      DAGSTER_CURRENT_IMAGE: "dagster_user_code"
+      DAGSTER_POSTGRES_USER: ${DAGSTER_POSTGRES_USER}
+      DAGSTER_POSTGRES_PASSWORD: ${DAGSTER_POSTGRES_PASSWORD}
+      DAGSTER_POSTGRES_DB: ${DAGSTER_POSTGRES_DB}
+      DAGSTER_CURRENT_IMAGE: ${DAGSTER_CURRENT_IMAGE}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+    networks:
+      - internal
 
   dagster_webserver:
     build:
       context: .
       dockerfile: ./Dockerfile_dagster
     container_name: dagster_webserver
-    image: dagster_webserver_image
     entrypoint:
       - dagster-webserver
       - -h
@@ -46,59 +54,64 @@ services:
       - -w
       - workspace.yaml
     expose:
-      - "3000"
+      - '${DAGSTER_PORT}'
     ports:
-      - "3000:3000"
+      - '${DAGSTER_PORT}:3000'
     environment:
-      DAGSTER_POSTGRES_USER: "postgres_user"
-      DAGSTER_POSTGRES_PASSWORD: "postgres_password"
-      DAGSTER_POSTGRES_DB: "postgres_db"
-    volumes: # Make docker client accessible so we can terminate containers from the webserver
+      DAGSTER_POSTGRES_USER: ${DAGSTER_POSTGRES_USER}
+      DAGSTER_POSTGRES_PASSWORD: ${DAGSTER_POSTGRES_PASSWORD}
+      DAGSTER_POSTGRES_DB: ${DAGSTER_POSTGRES_DB}
+    volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/io_manager_storage:/tmp/io_manager_storage
-      - ./shared/dagster_home:/opt/dagster/dagster_home
+      - ./dagster.yaml:/opt/dagster/dagster_home/dagster.yaml
+      - ./workspace.yaml:/opt/dagster/dagster_home/workspace.yaml
     depends_on:
       postgresql:
         condition: service_healthy
       dagster_user_code:
         condition: service_started
+    networks:
+      - internal
 
   dagster_daemon:
     build:
       context: .
       dockerfile: ./Dockerfile_dagster
     container_name: dagster_daemon
-    image: dagster_daemon_image
     entrypoint:
       - dagster-daemon
       - run
     restart: on-failure
     environment:
-      DAGSTER_POSTGRES_USER: "postgres_user"
-      DAGSTER_POSTGRES_PASSWORD: "postgres_password"
-      DAGSTER_POSTGRES_DB: "postgres_db"
-    volumes: # Make docker client accessible so we can launch containers using host docker
+      DAGSTER_POSTGRES_USER: ${DAGSTER_POSTGRES_USER}
+      DAGSTER_POSTGRES_PASSWORD: ${DAGSTER_POSTGRES_PASSWORD}
+      DAGSTER_POSTGRES_DB: ${DAGSTER_POSTGRES_DB}
+    volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/io_manager_storage:/tmp/io_manager_storage
-      - ./shared/dagster_home:/opt/dagster/dagster_home
+      - ./dagster.yaml:/opt/dagster/dagster_home/dagster.yaml
+      - ./workspace.yaml:/opt/dagster/dagster_home/workspace.yaml
     depends_on:
       postgresql:
         condition: service_healthy
       dagster_user_code:
         condition: service_started
+    networks:
+      - internal
 
   superset:
     build:
       context: .
       dockerfile: ./superset/Dockerfile
       args:
-        SUPERSET_ADMIN: $SUPERSET_ADMIN
-        SUPERSET_PASSWORD: $SUPERSET_PASSWORD
+        SUPERSET_ADMIN: ${SUPERSET_ADMIN}
+        SUPERSET_PASSWORD: ${SUPERSET_PASSWORD}
         SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
     environment:
       SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
     ports:
-      - '8088:8088'
+      - '${SUPERSET_PORT}:8088'
     command: gunicorn --bind  "0.0.0.0:8088" --access-logfile '-' --error-logfile '-' --workers 1 --worker-class gthread --threads 20 --timeout 60 --limit-request-line 0 --limit-request-field_size 0 "superset.app:create_app()"
     volumes:
       - ./shared/db:/app/superset_home/db
@@ -107,16 +120,24 @@ services:
       - dagster_webserver
       - postgresql
       - minio
+    networks:
+      - internal
 
   minio:
     image: minio/minio:latest
     environment:
-      MINIO_ROOT_USER: $MINIO_ROOT_USER
-      MINIO_ROOT_PASSWORD: $MINIO_ROOT_PASSWORD
-    command: server /data --console-address ":9001"
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":${MINIO_CONSOLE_PORT}"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - '${MINIO_PORT}:9000'
+      - '${MINIO_CONSOLE_PORT}:9001'
     volumes:
       - ./shared/minio_data:/data
     restart: always
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
